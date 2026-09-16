@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { createServer } from 'node:http';
-import { createApp } from '../backend/app.js';
+import { createApp, requireExperimentToken } from '../backend/app.js';
 
 async function startTestServer(env) {
   const server = createServer(createApp(env));
@@ -31,6 +31,7 @@ describe('backend API', () => {
   before(async () => {
     server = await startTestServer({
       APP_NAME: 'Test Env App',
+      EXPERIMENT_TOKEN: 'super-secret-test-token',
       WELCOME_MESSAGE: 'Hello from tests.'
     });
   });
@@ -60,14 +61,15 @@ describe('backend API', () => {
     assert.equal(typeof data.timestamp, 'string');
   });
 
-  it('returns an explicit missing-variable error for the experiment route', async () => {
-    const response = await fetch(`${server.baseUrl}/api/experiment`, { method: 'POST' });
-    const data = await response.json();
-
-    assert.equal(response.status, 500);
-    assert.equal(data.error.code, 'MISSING_ENV_VAR');
-    assert.equal(data.error.variable, 'EXPERIMENT_TOKEN');
-    assert.equal(data.error.message, 'Missing required environment variable: EXPERIMENT_TOKEN');
+  it('refuses to create the backend when EXPERIMENT_TOKEN is missing or empty', () => {
+    assert.throws(
+      () => requireExperimentToken({}),
+      /Missing required environment variable: EXPERIMENT_TOKEN/
+    );
+    assert.throws(
+      () => createApp({ EXPERIMENT_TOKEN: '   ' }),
+      /Missing required environment variable: EXPERIMENT_TOKEN/
+    );
   });
 
   it('enables the experiment route without exposing the token', async () => {

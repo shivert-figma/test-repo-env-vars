@@ -2,8 +2,11 @@ import express from 'express';
 
 const DEFAULT_APP_NAME = 'Test Repo Env Vars';
 const DEFAULT_WELCOME_MESSAGE = 'Welcome! Configure this message with WELCOME_MESSAGE.';
+const REQUIRED_TOKEN_ERROR = 'Missing required environment variable: EXPERIMENT_TOKEN';
 
 export function createApp(env = process.env) {
+  requireExperimentToken(env);
+
   const app = express();
 
   app.use(express.json());
@@ -32,17 +35,6 @@ export function createApp(env = process.env) {
   });
 
   app.post('/api/experiment', (_request, response) => {
-    if (!env.EXPERIMENT_TOKEN) {
-      response.status(500).json({
-        error: {
-          code: 'MISSING_ENV_VAR',
-          variable: 'EXPERIMENT_TOKEN',
-          message: 'Missing required environment variable: EXPERIMENT_TOKEN'
-        }
-      });
-      return;
-    }
-
     response.json({
       message: 'Experiment endpoint is enabled.',
       tokenPresent: true
@@ -59,4 +51,10 @@ export function createApp(env = process.env) {
   });
 
   return app;
+}
+
+export function requireExperimentToken(env = process.env) {
+  if (!env.EXPERIMENT_TOKEN || env.EXPERIMENT_TOKEN.trim() === '') {
+    throw new Error(REQUIRED_TOKEN_ERROR);
+  }
 }

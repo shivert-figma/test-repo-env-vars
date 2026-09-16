@@ -25,6 +25,18 @@ async function ask(question, defaultValue) {
   return answer.trim() || defaultValue;
 }
 
+async function askRequired(question) {
+  while (true) {
+    const answer = (await rl.question(`${question}: `)).trim();
+
+    if (answer) {
+      return answer;
+    }
+
+    console.log('A non-empty EXPERIMENT_TOKEN is required for backend startup.');
+  }
+}
+
 async function askYesNo(question, defaultValue = false) {
   const suffix = defaultValue ? 'Y/n' : 'y/N';
   const answer = normalizeYesNo(await rl.question(`${question} (${suffix}): `));
@@ -52,14 +64,9 @@ function renderEnv(values) {
     '# Optional preview port fallback.',
     `PORT=${values.FRONTEND_PORT}`,
     '',
-    '# Server-only variable. The browser never receives this value.'
+    '# Required server-only variable. The browser never receives this value.',
+    `EXPERIMENT_TOKEN=${quoteEnvValue(values.EXPERIMENT_TOKEN)}`
   ];
-
-  if (values.EXPERIMENT_TOKEN) {
-    lines.push(`EXPERIMENT_TOKEN=${quoteEnvValue(values.EXPERIMENT_TOKEN)}`);
-  } else {
-    lines.push('# EXPERIMENT_TOKEN="replace-with-a-local-test-token"');
-  }
 
   return `${lines.join('\n')}\n`;
 }
@@ -82,13 +89,9 @@ try {
     FRONTEND_HOST: defaults.FRONTEND_HOST,
     FRONTEND_PORT: await ask('Frontend preview port', defaults.FRONTEND_PORT),
     BACKEND_HOST: defaults.BACKEND_HOST,
-    BACKEND_PORT: await ask('Backend API port', defaults.BACKEND_PORT)
+    BACKEND_PORT: await ask('Backend API port', defaults.BACKEND_PORT),
+    EXPERIMENT_TOKEN: await askRequired('EXPERIMENT_TOKEN (required)')
   };
-
-  const setToken = await askYesNo('Set EXPERIMENT_TOKEN now?', false);
-  if (setToken) {
-    values.EXPERIMENT_TOKEN = await ask('EXPERIMENT_TOKEN', '');
-  }
 
   await writeFile(ENV_PATH, renderEnv(values), 'utf8');
 

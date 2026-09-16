@@ -12,13 +12,15 @@ npm run setup
 npm run dev
 ```
 
-`npm run setup` asks for the app name, welcome message, local ports, and whether to set `EXPERIMENT_TOKEN`. It writes a local `.env` file, which is ignored by git.
+`npm run setup` asks for the app name, welcome message, local ports, and a required `EXPERIMENT_TOKEN`. It writes a local `.env` file, which is ignored by git.
 
 For a non-interactive setup, copy the example file instead:
 
 ```bash
 cp .env.example .env
 ```
+
+Then edit `.env` and set a non-empty `EXPERIMENT_TOKEN` before starting the app. Do not commit `.env`.
 
 Open the Vite preview URL:
 
@@ -39,29 +41,27 @@ The Vite dev server is configured for browser-preview environments with host `0.
 | `FRONTEND_HOST` | Vite | No | Yes | Frontend bind host |
 | `FRONTEND_PORT` | Vite | No | Yes | Frontend port |
 | `PORT` | Vite fallback | No | Yes | Preview port when `FRONTEND_PORT` is not set |
-| `EXPERIMENT_TOKEN` | Backend | No | Yes | Enables the protected experiment endpoint |
+| `EXPERIMENT_TOKEN` | Backend | No | Yes | Required for backend startup and enables the protected experiment endpoint |
 
 Node reads `.env` when each server process starts. After changing `.env`, stop `npm run dev` and start it again.
 
 ## Test Missing `EXPERIMENT_TOKEN`
 
-When `npm run setup` asks whether to set `EXPERIMENT_TOKEN`, answer `n`. You can also leave `EXPERIMENT_TOKEN` commented out or unset in `.env`, then start the app:
+Leave `EXPERIMENT_TOKEN` empty or unset in `.env`, then start the app:
 
 ```bash
-npm run dev
+npm run dev:backend
 ```
 
-Click **Run Experiment**. The UI should show:
+The backend should refuse to start with:
 
 ```text
 Missing required environment variable: EXPERIMENT_TOKEN
 ```
 
-The app should continue running normally.
-
 ## Test Present `EXPERIMENT_TOKEN`
 
-Run `npm run setup` again and answer `y` when asked whether to set `EXPERIMENT_TOKEN`, or set a local value in `.env`:
+Run `npm run setup` again and enter a non-empty token, or set a local value in `.env`:
 
 ```bash
 EXPERIMENT_TOKEN="local-development-token"
@@ -93,4 +93,4 @@ Restart `npm run dev` and reload the page. The heading and welcome message shoul
 npm test
 ```
 
-The tests start isolated backend instances and verify health, config, missing-token, and present-token behavior.
+The tests start isolated backend instances and verify health, config, startup token validation, and token-safe experiment behavior.
